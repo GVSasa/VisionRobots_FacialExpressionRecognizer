@@ -1,0 +1,82 @@
+## conda update anaconda-navigator  
+## conda update navigator-updater  
+## It is important to install this libraries as an admin
+## cv2 works for our laptom camera and frames to use
+## deepface works for the trained images of human emotions
+import cv2 ### pip install opencv-python
+import numpy as np
+from deepface import DeepFace ## pip install deepface
+# -*- coding: UTF-8 -*-
+
+## Download haarcascade from frontal face in order to recognize an specific event
+## this being the face of a human
+faceCascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+## sets the camera
+capture = cv2.VideoCapture(0)
+expression = 'neutral.png'
+
+    
+while True:
+    ## Read image value, when expression changes image changes
+    img_happy = cv2.imread(expression)
+    size = 100
+    img_happy = cv2.resize(img_happy, (size, size))
+    img2gray = cv2.cvtColor(img_happy, cv2.COLOR_BGR2GRAY)
+    ret, mask = cv2.threshold(img2gray, 1, 255, cv2.THRESH_BINARY)
+    
+    ## taking a picture frame froma  video continuosly
+    ## looking for the speficic emotion
+    ret,frame = capture.read()
+    
+    ## Image over video
+    roi = frame[-size-100:-100, -size-400:-400]
+    roi[np.where(mask)] = 0
+    roi += img_happy
+    
+    result = DeepFace.analyze(frame, actions = ['emotion'], enforce_detection=False)
+    
+    ## Draw the identificator image 
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = faceCascade.detectMultiScale(gray,1.1,4)
+    for(x, y, w, h) in faces:
+        cv2.circle(frame,(x + 60, y + 60), 150, (255,255,0), 2)
+        
+    font = cv2.FONT_HERSHEY_DUPLEX  
+    
+    if (result['dominant_emotion'] == "happy"):
+        #result['dominant_emotion'] = ":D"
+        expression = 'happy.png'
+    if (result['dominant_emotion'] == "sad"):
+        #result['dominant_emotion'] = ":C"
+        expression = 'sad.png'
+    if (result['dominant_emotion'] == "angry"):
+        #result['dominant_emotion'] = "D:<"
+        expression = 'angry.png'
+    if (result['dominant_emotion'] == "neutral"):
+        #result['dominant_emotion'] = ":|"
+        expression = 'neutral.png'
+    if (result['dominant_emotion'] == "fear"):
+        #result['dominant_emotion'] = "<:o"
+        expression = 'fear.png'
+    if (result['dominant_emotion'] == "surprise"):
+        #result['dominant_emotion'] = ":O"
+        expression = 'surprise.png'
+    if (result['dominant_emotion'] == "disgust"):
+        #result['dominant_emotion'] = ":/"
+        expression = 'disgust.png'
+        
+   ## cv2.putText(frame,
+   ##             result['dominant_emotion'],
+   ##             (20,110),
+   ##             font, 3,
+   ##             (0, 255, 255),
+   ##             2,
+   ##             cv2.LINE_4)
+        
+    cv2.imshow('Demo video', frame)
+    
+    if cv2.waitKey(2) & 0xFF == ord('q'):
+        break
+        
+capture.release()
+cv2.destroyAllWindows()
